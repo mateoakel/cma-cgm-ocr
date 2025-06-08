@@ -113,87 +113,7 @@ export default function InvoiceUpload() {
     }
   }
 
-  // Test webhook with just name data (no files)
-  const testWebhook = async () => {
-    if (!firstName.trim() || !lastName.trim()) {
-      alert('Please fill in both first and last name to test.')
-      return
-    }
 
-    setIsSubmitting(true)
-    setSubmitStatus('idle')
-    setErrorMessage('')
-
-    try {
-      console.log('Testing webhook with JSON data...')
-      
-      const testData = {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        test: true
-      }
-
-      // First try POST with JSON
-      console.log('Trying POST with JSON...')
-      let response = await fetch('https://mateo17.app.n8n.cloud/webhook-test/aabbb372-024b-478e-9e4b-55180ba0f540', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(testData),
-      })
-
-      console.log('POST JSON response status:', response.status)
-      
-      // If POST fails, try GET with query parameters
-      if (!response.ok) {
-        console.log('POST failed, trying GET with query parameters...')
-        const params = new URLSearchParams({
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          test: 'true'
-        })
-        
-        response = await fetch(`https://mateo17.app.n8n.cloud/webhook-test/aabbb372-024b-478e-9e4b-55180ba0f540?${params}`, {
-          method: 'GET',
-        })
-        console.log('GET response status:', response.status)
-      }
-
-      // If GET also fails, try POST with form data
-      if (!response.ok) {
-        console.log('GET failed, trying POST with FormData...')
-        const formData = new FormData()
-        formData.append('firstName', firstName.trim())
-        formData.append('lastName', lastName.trim())
-        formData.append('test', 'true')
-        
-        response = await fetch('https://mateo17.app.n8n.cloud/webhook-test/aabbb372-024b-478e-9e4b-55180ba0f540', {
-          method: 'POST',
-          body: formData,
-        })
-        console.log('POST FormData response status:', response.status)
-      }
-      
-      if (response.ok) {
-        const responseData = await response.text()
-        console.log('Test success:', responseData)
-        setSubmitStatus('success')
-        setErrorMessage('✅ Webhook connection successful! Method working.')
-      } else {
-        const errorText = await response.text()
-        console.error('All methods failed. Last error:', errorText)
-        setErrorMessage(`All connection methods failed. Status: ${response.status}. This might be a CORS issue or the webhook configuration needs adjustment.`)
-        setSubmitStatus('error')
-      }
-    } catch (error) {
-      console.error('Test error:', error)
-      setErrorMessage(`Connection error: ${error instanceof Error ? error.message : 'Unknown error'}. This might be a network or CORS issue.`)
-      setSubmitStatus('error')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
   // Handle form submission
   const handleSubmit = async (event: React.FormEvent) => {
@@ -303,7 +223,7 @@ export default function InvoiceUpload() {
       })
 
       console.log('POST JSON response status:', response.status)
-      
+
       // Log the actual response text to see what's wrong
       if (!response.ok) {
         const errorText = await response.text()
@@ -346,24 +266,30 @@ export default function InvoiceUpload() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Invoice Upload
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl mb-6 shadow-lg">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent mb-3">
+            Document Upload
           </h1>
-          <p className="text-gray-600">
-            Please provide your information and upload your invoices
+          <p className="text-lg text-gray-600 max-w-md mx-auto leading-relaxed">
+            Upload your documents and we'll convert them to PDF format for processing
           </p>
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8 transition-all duration-300 hover:shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* First Name Input */}
-            <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+            {/* Name Inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label htmlFor="firstName" className="block text-sm font-semibold text-gray-800">
                 First Name *
               </label>
               <input
@@ -371,15 +297,13 @@ export default function InvoiceUpload() {
                 id="firstName"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-400"
                 placeholder="Enter your first name"
                 required
               />
             </div>
-
-            {/* Last Name Input */}
-            <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="space-y-2">
+                <label htmlFor="lastName" className="block text-sm font-semibold text-gray-800">
                 Last Name *
               </label>
               <input
@@ -387,79 +311,98 @@ export default function InvoiceUpload() {
                 id="lastName"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-400"
                 placeholder="Enter your last name"
                 required
               />
             </div>
-
-            {/* Test Webhook Button */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-              <h4 className="text-sm font-medium text-yellow-800 mb-2">
-                🧪 Test Connection First
-              </h4>
-              <p className="text-xs text-yellow-700 mb-3">
-                Click this button to test if the webhook is working before uploading files
-              </p>
-              <button
-                type="button"
-                onClick={testWebhook}
-                disabled={isSubmitting}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isSubmitting
-                    ? 'bg-gray-400 cursor-not-allowed text-white'
-                    : 'bg-yellow-600 hover:bg-yellow-700 text-white'
-                }`}
-              >
-                {isSubmitting ? 'Testing...' : 'Test Webhook Connection'}
-              </button>
             </div>
 
+
+
             {/* File Upload Input */}
-            <div>
-              <label htmlFor="file-input" className="block text-sm font-medium text-gray-700 mb-2">
-                Upload Invoices *
+            <div className="space-y-4">
+              <label htmlFor="file-input" className="block text-sm font-semibold text-gray-800">
+                Upload Documents *
               </label>
+              <div className="relative">
               <input
                 type="file"
                 id="file-input"
                 multiple
-                accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp"
+                  accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp"
                 onChange={handleFileChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  className="w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 file:mr-4 file:py-2 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-blue-500 file:to-indigo-500 file:text-white hover:file:from-blue-600 hover:file:to-indigo-600 file:shadow-lg hover:file:shadow-xl file:transition-all file:duration-200 bg-gradient-to-br from-gray-50 to-blue-50/30"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Select multiple files (PDF, JPG, PNG, GIF, BMP, WebP) - images will be converted to PDF
-              </p>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="text-center">
+                    <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <p className="text-sm text-gray-600 font-medium">
+                      Drop files here or click to browse
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Supports PDF, JPG, PNG, GIF, BMP, WebP • Images automatically converted to PDF</span>
+              </div>
             </div>
 
             {/* Selected Files Display */}
             {files.length > 0 && (
-              <div className="bg-gray-50 rounded-md p-3">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Selected Files ({files.length}):
+              <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border-2 border-emerald-200/50 rounded-2xl p-6 space-y-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center justify-center w-8 h-8 bg-emerald-100 rounded-lg">
+                    <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-bold text-gray-800">
+                    Selected Files ({files.length})
                 </h4>
-                <ul className="text-sm text-gray-600 space-y-1">
+                </div>
+                <div className="space-y-3">
                   {files.map((file, index) => (
-                    <li key={index} className="flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <span className="truncate">{file.name}</span>
+                    <div key={index} className="flex items-center justify-between p-4 bg-white/60 backdrop-blur-sm rounded-xl border border-white/40 transition-all duration-200 hover:bg-white/80">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900 truncate max-w-xs">{file.name}</p>
+                          <p className="text-xs text-gray-500">{file.type}</p>
+                        </div>
                         {file.type !== 'application/pdf' && (
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 text-xs font-semibold rounded-full border border-blue-200">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
                             → PDF
-                          </span>
+                          </div>
                         )}
                       </div>
-                      <span className="text-gray-400 ml-2">
+                      <div className="text-right">
+                        <span className="text-sm font-semibold text-gray-700">
                         {(file.size / 1024 / 1024).toFixed(2)} MB
                       </span>
-                    </li>
+                      </div>
+                    </div>
                   ))}
-                </ul>
-                <p className="text-xs text-gray-500 mt-2">
-                  📄 All files will be converted to PDF format before upload
-                </p>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-emerald-800 bg-emerald-100/50 rounded-xl p-3">
+                  <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-medium">All files will be converted to PDF format before upload</span>
+                </div>
               </div>
             )}
 
@@ -467,49 +410,113 @@ export default function InvoiceUpload() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`w-full py-2 px-4 rounded-md font-medium transition-colors ${
+              className={`w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-300 transform ${
                 isSubmitting
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-              } text-white`}
+                  ? 'bg-gray-400 cursor-not-allowed scale-95 text-white'
+                  : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-500/50'
+              }`}
             >
-              {isSubmitting ? 'Processing...' : 'Submit Invoice Data'}
+              {isSubmitting ? (
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Processing Documents...</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-3">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <span>Upload & Process Documents</span>
+                </div>
+              )}
             </button>
 
             {/* Processing Status */}
             {processingStatus && (
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                <p className="text-blue-800 text-sm font-medium">
-                  ⚙️ {processingStatus}
-                </p>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200/50 rounded-2xl p-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl">
+                    <div className="w-6 h-6 border-3 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
+                  </div>
+                  <div>
+                    <p className="text-blue-900 font-semibold text-lg">Processing</p>
+                    <p className="text-blue-800 text-sm">
+                      {processingStatus}
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
             {/* Status Messages */}
             {submitStatus === 'success' && (
-              <div className="bg-green-50 border border-green-200 rounded-md p-3">
-                <p className="text-green-800 text-sm font-medium">
-                  {errorMessage || '✅ Successfully submitted! Your data has been sent to the webhook.'}
-                </p>
+              <div className="bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-200/50 rounded-2xl p-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-center w-12 h-12 bg-emerald-100 rounded-xl">
+                    <svg className="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-emerald-900 font-bold text-lg">Success!</p>
+                    <p className="text-emerald-800 text-sm">
+                      {errorMessage || 'Your documents have been uploaded and processed successfully.'}
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
             {submitStatus === 'error' && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                <p className="text-red-800 text-sm font-medium">
-                  ❌ {errorMessage || 'Something went wrong. Please try again.'}
-                </p>
-                <p className="text-red-600 text-xs mt-2">
-                  Check the browser console (F12) for detailed error information.
-                </p>
+              <div className="bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-200/50 rounded-2xl p-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-xl flex-shrink-0">
+                    <svg className="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-red-900 font-bold text-lg">Upload Failed</p>
+                    <p className="text-red-800 text-sm mb-2">
+                      {errorMessage || 'Something went wrong. Please try again.'}
+                    </p>
+                    <p className="text-red-600 text-xs bg-red-100/50 rounded-lg p-2">
+                      💡 Tip: Check the browser console (F12) for detailed error information.
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
           </form>
         </div>
 
         {/* Footer Info */}
-        <div className="text-center mt-6 text-sm text-gray-500">
-          <p>Your data is securely processed and sent to our system.</p>
+        <div className="text-center mt-8 space-y-4">
+          <div className="flex items-center justify-center gap-4 text-sm text-gray-500">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>Secure Processing</span>
+            </div>
+            <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Auto PDF Conversion</span>
+            </div>
+            <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span>Encrypted Transfer</span>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 max-w-lg mx-auto">
+            Your documents are automatically converted to PDF format and securely transmitted using industry-standard encryption protocols.
+          </p>
         </div>
       </div>
     </div>
