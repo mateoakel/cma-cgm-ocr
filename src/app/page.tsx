@@ -1,7 +1,26 @@
 'use client'
 
 import { jsPDF } from 'jspdf'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
+declare global {
+  interface Window {
+    gtag: (
+      type: 'event',
+      eventName: 'conversion',
+      eventParams: {
+        send_to: string
+      },
+    ) => void
+  }
+}
+
+const gtag_report_conversion = () => {
+  window.gtag('event', 'conversion', {
+    send_to: 'AW-11490839090/zsTRCJnqo9oaELKUoecq',
+  })
+  return false
+}
 
 export default function InvoiceUpload() {
   // State variables to store form data and status
@@ -12,6 +31,10 @@ export default function InvoiceUpload() {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
   const [processingStatus, setProcessingStatus] = useState('')
+
+  useEffect(() => {
+    gtag_report_conversion()
+  }, [])
 
   // Convert file to PDF, then to base64 string
   const convertFileToPdfBase64 = (file: File): Promise<string> => {
@@ -86,24 +109,6 @@ export default function InvoiceUpload() {
     })
   }
 
-  // Convert file to base64 string (keeping the old function for reference)
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          // Remove the data:mime/type;base64, prefix
-          const base64 = reader.result.split(',')[1]
-          resolve(base64)
-        } else {
-          reject(new Error('Failed to convert file to base64'))
-        }
-      }
-      reader.onerror = error => reject(error)
-    })
-  }
-
   // Handle file selection (allows multiple files)
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = event.target.files
@@ -112,8 +117,6 @@ export default function InvoiceUpload() {
       setFiles(Array.from(selectedFiles))
     }
   }
-
-
 
   // Handle form submission
   const handleSubmit = async (event: React.FormEvent) => {
@@ -185,10 +188,10 @@ export default function InvoiceUpload() {
         })
       )
 
-            setProcessingStatus('Preparing to send individual requests...')
+      setProcessingStatus('Preparing to send individual requests...')
 
       // Create individual payloads (one per file) - COMPLETELY INDEPENDENT
-      const individualPayloads = filesData.map((fileData, index) => ({
+      const individualPayloads = filesData.map(fileData => ({
         // Same structure for every request
         firstName: firstName.trim(),
         lastName: lastName.trim(),
@@ -221,7 +224,7 @@ export default function InvoiceUpload() {
       try {
         // Send ALL requests simultaneously using Promise.all - each one completely independent
         const responses = await Promise.all(
-          individualPayloads.map((payload, index) =>
+          individualPayloads.map(payload =>
             fetch('https://mateo17.app.n8n.cloud/webhook-test/aabbb372-024b-478e-9e4b-55180ba0f540', {
               method: 'POST',
               headers: {
@@ -271,6 +274,7 @@ export default function InvoiceUpload() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-xl mx-auto">
         {/* Header */}
@@ -284,7 +288,7 @@ export default function InvoiceUpload() {
             Document Upload
           </h1>
           <p className="text-lg text-gray-600 max-w-md mx-auto leading-relaxed">
-            Upload your documents and we'll convert them to PDF format for processing
+            Upload your documents and we&apos;ll convert them to PDF format for processing
           </p>
         </div>
 
@@ -322,8 +326,6 @@ export default function InvoiceUpload() {
               />
             </div>
             </div>
-
-
 
             {/* File Upload Input */}
             <div className="space-y-4">
@@ -525,5 +527,6 @@ export default function InvoiceUpload() {
         </div>
       </div>
     </div>
+    </>
   )
 }
