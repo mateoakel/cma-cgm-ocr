@@ -185,75 +185,80 @@ export default function InvoiceUpload() {
         })
       )
 
-      setProcessingStatus('Sending data to webhook...')
+            setProcessingStatus('Preparing to send individual requests...')
 
-      // Create comprehensive data object
-      const submissionData = {
+      // Create individual payloads (one per file) - COMPLETELY INDEPENDENT
+      const individualPayloads = filesData.map((fileData, index) => ({
+        // Same structure for every request
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        submissionTime: new Date().toISOString(),
-        fileCount: files.length,
-        files: filesData,
-        metadata: {
-          userAgent: navigator.userAgent,
-          timestamp: Date.now(),
-          totalSize: files.reduce((sum, file) => sum + file.size, 0)
+        submissionTime: new Date().toISOString(), // Each gets its own timestamp
+        
+        // Individual file data (different for each request)
+        fileName: fileData.name,
+        fileSize: fileData.size,
+        fileType: fileData.type,
+        fileContent: fileData.content,
+        originalFileName: fileData.originalName,
+        originalFileType: fileData.originalType,
+        convertedToPdf: fileData.convertedToPdf,
+        
+        // Metadata - each file is completely independent
+        uploadedAt: new Date().toISOString()
+      }))
+
+      setProcessingStatus('Sending individual requests to create separate items...')
+
+      console.log(`🚀 Sending ${individualPayloads.length} independent requests`)
+      console.log('📦 Each request is completely independent with same structure:')
+      individualPayloads.forEach((payload, index) => {
+        console.log(`   - Request ${index + 1}:`, {
+          ...payload,
+          fileContent: payload.fileContent ? `${payload.fileContent.substring(0, 50)}...` : 'null'
+        })
+      })
+
+      try {
+        // Send ALL requests simultaneously using Promise.all - each one completely independent
+        const responses = await Promise.all(
+          individualPayloads.map((payload, index) =>
+            fetch('https://mateo17.app.n8n.cloud/webhook-test/aabbb372-024b-478e-9e4b-55180ba0f540', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(payload),
+            })
+          )
+        )
+
+        console.log(`📡 All ${responses.length} requests completed`)
+
+        // Check if all requests were successful
+        const allSuccessful = responses.every(response => response.ok)
+        const successCount = responses.filter(response => response.ok).length
+
+        if (allSuccessful) {
+          console.log('✅ All requests successful!')
+          setSubmitStatus('success')
+          setErrorMessage(`✅ Successfully sent ${successCount} files as separate items! Each file will appear as a separate item in your n8n workflow.`)
+          
+          // Reset form after successful submission
+          setFirstName('')
+          setLastName('')
+          setFiles([])
+          // Reset file input
+          const fileInput = document.getElementById('file-input') as HTMLInputElement
+          if (fileInput) fileInput.value = ''
+        } else {
+          console.error(`❌ ${responses.length - successCount} requests failed`)
+          setSubmitStatus('error')
+          setErrorMessage(`Partial success: ${successCount}/${responses.length} files uploaded. Check console for details.`)
         }
-      }
-
-      console.log('Sending comprehensive data with files...')
-      console.log('Data being sent:', {
-        ...submissionData,
-        files: submissionData.files.map(f => ({
-          ...f,
-          content: f.content ? `${f.content.substring(0, 100)}...` : 'null'
-        }))
-      })
-
-      let response: Response
-
-      // Try POST with JSON (includes actual file content as base64)
-      console.log('Trying POST with JSON including file content...')
-      response = await fetch('https://mateo17.app.n8n.cloud/webhook-test/aabbb372-024b-478e-9e4b-55180ba0f540', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(submissionData),
-      })
-
-      console.log('POST JSON response status:', response.status)
-
-      // Log the actual response text to see what's wrong
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('POST JSON failed with error:', errorText)
-      }
-
-      // Only proceed if JSON method succeeded - no fallbacks that lose file content
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('POST JSON method failed - no fallback will be used to preserve file content:', errorText)
-        throw new Error(`Failed to upload files with base64 content. Status: ${response.status}. Error: ${errorText}`)
-      }
-
-      if (response.ok) {
-        const responseData = await response.text()
-        console.log('Success response:', responseData)
-        setSubmitStatus('success')
-        setErrorMessage('✅ Successfully submitted! Your invoices and data have been sent to the webhook.')
-        // Reset form after successful submission
-        setFirstName('')
-        setLastName('')
-        setFiles([])
-        // Reset file input
-        const fileInput = document.getElementById('file-input') as HTMLInputElement
-        if (fileInput) fileInput.value = ''
-      } else {
-        const errorText = await response.text()
-        console.error('All methods failed. Error response:', errorText)
-        setErrorMessage(`All submission methods failed. Status: ${response.status}. Please check your n8n webhook configuration.`)
+      } catch (error) {
+        console.error('❌ Network error:', error)
         setSubmitStatus('error')
+        setErrorMessage(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Error submitting form:', error)
